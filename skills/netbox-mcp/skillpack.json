@@ -1,0 +1,15 @@
+{
+  "files": {
+    "skills/netbox-mcp/SKILL.md": "SKILL.md"
+  },
+  "directories": [],
+  "config": {
+    "netbox-mcp": {
+      "enabled": true,
+      "env": {
+        "NETBOX_URL": "",
+        "NETBOX_TOKEN": ""
+      }
+    }
+  }
+}
