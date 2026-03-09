@@ -1,104 +1,183 @@
-#!/bin/sh
-set -eu
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+import { exec as execCb } from "child_process";
+import { promisify } from "util";
+import fs from "fs";
 
-KUBECTL_BIN="${KUBECTL_BIN:-}"
+const exec = promisify(execCb);
 
-ensure_kubectl() {
-  if [ -n "${KUBECTL_BIN}" ] && [ -x "${KUBECTL_BIN}" ]; then
-    return 0
-  fi
+// Server-oppsett
+const server = new Server(
+  {
+    name: "k8s-mcp-server",
+    version: "1.0.0",
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
 
-  if command -v kubectl >/dev/null 2>&1; then
-    KUBECTL_BIN="$(command -v kubectl)"
-    return 0
-  fi
+// Hjelpefunksjon for å kjøre kubectl med in-cluster autentisering
+async function runKubectl(args) {
+  const saDir = "/var/run/secrets/kubernetes.io/serviceaccount";
+  let authFlags = "";
 
-  # Download kubectl into a writable path (persist across restarts)
-  # Uses in-cluster CA + token by default, so no kubeconfig is needed.
-  TARGET="${HOME}/.local/bin/kubectl"
-  mkdir -p "$(dirname "$TARGET")"
+  // Sjekker om vi kjører inne i en pod og legger til auth-flagg hvis ja
+  if (fs.existsSync(saDir)) {
+    const ca = `${saDir}/ca.crt`;
+    const token = fs.readFileSync(`${saDir}/token`, "utf8").trim();
+    const serverHost = process.env.KUBERNETES_SERVICE_HOST;
+    const serverPort = process.env.KUBERNETES_SERVICE_PORT;
+    const apiServer = `https://${serverHost}:${serverPort}`;
 
-  if [ ! -x "$TARGET" ]; then
-    # Pin to a known stable version (adjust if you want)
-    VER="${KUBECTL_VERSION:-v1.31.0}"
-    URL="https://dl.k8s.io/release/${VER}/bin/linux/amd64/kubectl"
-    curl -fsSL "$URL" -o "$TARGET"
-    chmod +x "$TARGET"
-  fi
+    authFlags = `--server=${apiServer} --certificate-authority=${ca} --token=${token}`;
+  }
 
-  KUBECTL_BIN="$TARGET"
+  // Antar at kubectl finnes i PATH. (Kan utvides med auto-nedlasting som i scriptet ditt)
+  const command = `kubectl ${authFlags} ${args.join(" ")}`;
+  
+  try {
+    const { stdout, stderr } = await exec(command);
+    if (stderr && !stdout) {
+      return { isError: true, content: stderr };
+    }
+    return { isError: false, content: stdout + (stderr ? `\nAdvarsler:\n${stderr}` : "") };
+  } catch (error) {
+    return { isError: true, content: error.message };
+  }
 }
 
-k() {
-  ensure_kubectl
+// 1. Definer hvilke verktøy MCP-serveren tilbyr
+server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  tools: [
+    {
+      name: "k8s_events",
+      description: "Hent Kubernetes-events, sortert på siste tidsstempel.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          namespace: { type: "string", description: "Namespace, eller '-A' for alle" }
+        }
+      }
+    },
+    {
+      name: "k8s_get",
+      description: "Kjør 'kubectl get' for å hente ressurser (read-only).",
+      inputSchema: {
+        type: "object",
+        properties: {
+          resource: { type: "string", description: "Ressurstype (f.eks. pods, svc)" },
+          namespace: { type: "string", description: "Namespace" },
+          args: { type: "string", description: "Ekstra argumenter som -o yaml eller --field-selector" }
+        },
+        required: ["resource"]
+      }
+    },
+    {
+      name: "k8s_describe",
+      description: "Kjør 'kubectl describe' for detaljert info om en ressurs.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          kind: { type: "string", description: "Ressurstype" },
+          name: { type: "string", description: "Navn på ressursen" },
+          namespace: { type: "string", description: "Namespace" }
+        },
+        required: ["kind", "name", "namespace"]
+      }
+    },
+    {
+      name: "k8s_logs",
+      description: "Hent logger for en spesifikk pod.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          pod: { type: "string", description: "Navn på pod" },
+          namespace: { type: "string", description: "Namespace" },
+          container: { type: "string", description: "Spesifikk container (valgfritt)" },
+          tail: { type: "number", description: "Antall linjer fra slutten (valgfritt)" }
+        },
+        required: ["pod", "namespace"]
+      }
+    },
+    {
+      name: "k8s_health",
+      description: "Sjekk klusterets helse og versjon.",
+      inputSchema: {
+        type: "object",
+        properties: {}
+      }
+    }
+  ]
+}));
 
-  # Use in-cluster auth explicitly (no kubeconfig needed)
-  SA_DIR="/var/run/secrets/kubernetes.io/serviceaccount"
-  CA="${SA_DIR}/ca.crt"
-  TOKEN_FILE="${SA_DIR}/token"
-  NS_FILE="${SA_DIR}/namespace"
+// 2. Håndter kjøringen av verktøyene
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+  let kubectlArgs = [];
 
-  TOKEN="$(cat "$TOKEN_FILE")"
-  SERVER="https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}"
+  switch (name) {
+    case "k8s_events":
+      const ns = args.namespace || "openclaw";
+      kubectlArgs = ["get", "events", "--sort-by=.lastTimestamp"];
+      if (ns === "-A" || ns === "--all-namespaces") {
+        kubectlArgs.push("-A");
+      } else {
+        kubectlArgs.push("-n", ns);
+      }
+      break;
 
-  # NOTE: kubectl supports these flags broadly; keep it simple and deterministic
-  "$KUBECTL_BIN" \
-    --server="$SERVER" \
-    --certificate-authority="$CA" \
-    --token="$TOKEN" \
-    "$@"
+    case "k8s_get":
+      kubectlArgs = ["get", args.resource];
+      if (args.namespace) {
+        if (args.namespace === "-A") kubectlArgs.push("-A");
+        else kubectlArgs.push("-n", args.namespace);
+      }
+      if (args.args) kubectlArgs.push(...args.args.split(" "));
+      break;
+
+    case "k8s_describe":
+      kubectlArgs = ["describe", args.kind, args.name, "-n", args.namespace];
+      break;
+
+    case "k8s_logs":
+      kubectlArgs = ["logs", args.pod, "-n", args.namespace];
+      if (args.container) kubectlArgs.push("-c", args.container);
+      if (args.tail) kubectlArgs.push(`--tail=${args.tail}`);
+      break;
+
+    case "k8s_health":
+      // Kjører versjon først
+      const versionResult = await runKubectl(["version", "--client=true"]);
+      const infoResult = await runKubectl(["cluster-info"]);
+      return {
+        content: [
+          { type: "text", text: `${versionResult.content}\n---\n${infoResult.content}` }
+        ]
+      };
+
+    default:
+      throw new Error(`Ukjent verktøy: ${name}`);
+  }
+
+  const result = await runKubectl(kubectlArgs);
+  return {
+    content: [{ type: "text", text: result.content }],
+    isError: result.isError,
+  };
+});
+
+// Start serveren med Stdio (Standard I/O brukes for å kommunisere med MCP-klienter)
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error("K8s MCP Server kjører via stdio");
 }
 
-usage() {
-  cat <<EOF
-Usage:
-  $0 events <namespace| -A>
-  $0 get <resource> [name] [-n ns|-A] [--field-selector ...] [-o ...]
-  $0 describe <kind> <name> -n <namespace>
-  $0 logs <pod> [-n ns] [-c container] [--tail N]
-  $0 health
-EOF
-  exit 1
-}
-
-cmd="${1:-}"
-shift || true
-
-case "$cmd" in
-  events)
-    ns="${1:-openclaw}"
-    if [ "$ns" = "-A" ] || [ "$ns" = "--all-namespaces" ]; then
-      k get events -A --sort-by=.lastTimestamp
-    else
-      k get events -n "$ns" --sort-by=.lastTimestamp
-    fi
-    ;;
-
-  get)
-    # read-only wrapper
-    k get "$@"
-    ;;
-
-  describe)
-    k describe "$@"
-    ;;
-
-  logs)
-    k logs "$@"
-    ;;
-
-  health)
-    k version --client=true
-    echo "---"
-    k cluster-info
-    ;;
-
-  ""|-h|--help|help)
-    usage
-    ;;
-
-  *)
-    echo "Unknown command: $cmd" >&2
-    usage
-    ;;
-esac
+main().catch((error) => console.error("Server feilet:", error));
