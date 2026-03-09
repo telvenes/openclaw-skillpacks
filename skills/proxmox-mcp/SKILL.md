@@ -1,11 +1,11 @@
 name: proxmox-mcp
-description: Advanced Proxmox VE management via Model Context Protocol.
+description: Advanced Proxmox VE and Ceph management via Model Context Protocol.
 tools:
   - type: mcp
     command: sh
     args:
       - "-c"
-      - "PYTHONPATH=skills/proxmox-mcp/src python3 -m proxmox_mcp.server"
+      - "pip install -q -r skills/proxmox-mcp/requirements.txt && PYTHONPATH=skills/proxmox-mcp/src python3 -m proxmox_mcp.server"
 instructions: |
   CRITICAL: Authentication strictly uses API Token authentication. Do NOT attempt to use standard passwords or curl.
 
@@ -23,5 +23,3 @@ instructions: |
   1. Tool Priority: Use these structured tools for ALL Proxmox queries. NEVER use raw curl, pip, or manual Python scripts.
   2. Generic Naming: Always use generic examples (e.g., vmid: 100) when discussing actions.
   3. Safety: Always verify the current state of a resource (using get_vms) before performing power or deletion tasks.
-
-
