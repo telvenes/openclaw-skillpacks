@@ -1,7 +1,7 @@
 {
   "files": {
-    "skills/k8s-mcp/SKILL.md": "SKILL.md",
-    "skills/k8s-mcp/scripts/k8s.sh": "scripts/k8s.sh"
+    "skills/k8s-mcp/SKILL.md": "skills/k8s-mcp/SKILL.md",
+    "skills/k8s-mcp/scripts/k8s.sh": "skills/k8s-mcp/scripts/k8s.sh"
   },
   "directories": ["skills/k8s-mcp/scripts"]
 }
