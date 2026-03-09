@@ -1,13 +1,37 @@
 name: k8s-mcp
-description: Kubernetes diagnostics via kubernetes-mcp-server (events/config/helm list) using MCP.
+description: >
+  Read-only Kubernetes diagnostics using in-cluster ServiceAccount (no kubectl required).
+  Commands: events, warnings, helm-list, config, version.
 tools:
   - type: exec
-instructions: |
-  Always use the exec tool to run the wrapper script. Do not ask questions first.
+    instructions: |
+      Use the wrapper script (read-only).
 
-  Commands (default namespace: openclaw):
-  - `sh /home/openclaw/.openclaw/workspace/skills/k8s-mcp/scripts/k8s.sh events [namespace]`
-  - `sh /home/openclaw/.openclaw/workspace/skills/k8s-mcp/scripts/k8s.sh config`
-  - `sh /home/openclaw/.openclaw/workspace/skills/k8s-mcp/scripts/k8s.sh helm-list`
+      Preferred usage (stable path when installed into workspace):
+        sh /home/openclaw/.openclaw/workspace/skills/k8s-mcp/scripts/k8s.sh <command> [args...]
 
-  When asked to troubleshoot, run `events` immediately and summarize Warning events with timestamps.
+      If your environment installs skills elsewhere (e.g. under argocd/apps/openclaw),
+      locate the script first:
+        find /home/openclaw/.openclaw/workspace -name k8s.sh 2>/dev/null
+
+      Commands:
+        events [namespace] [limit]
+          - Lists recent events in YAML-like blocks (default namespace: openclaw, default limit: 200)
+
+        warnings [namespace] [limit]
+          - Same as events, but only Type=Warning.
+
+        helm-list [namespace]
+          - Lists Helm releases in the namespace by inspecting secrets labeled owner=helm.
+            (Requires RBAC to list secrets in that namespace.)
+
+        config
+          - Prints in-cluster API endpoint, namespace, and basic runtime info.
+
+        version
+          - Prints Kubernetes /version from the API.
+
+      Output rules for assistants:
+        - Do NOT guess.
+        - Prefer summarizing Warning events with timestamp + message.
+        - If RBAC denies access, include the error output verbatim.
