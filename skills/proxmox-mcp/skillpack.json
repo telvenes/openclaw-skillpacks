@@ -1,0 +1,22 @@
+{
+  "files": {
+    "skills/proxmox-mcp/SKILL.md": "SKILL.md",
+    "skills/proxmox-mcp/requirements.txt": "requirements.txt"
+  },
+  "directories": [
+    "skills/proxmox-mcp"
+  ],
+  "config": {
+    "proxmox-mcp": {
+      "enabled": true,
+      "env": {
+        "PROXMOX_HOST": "",
+        "PROXMOX_USER": "",
+        "PROXMOX_TOKEN_NAME": "",
+        "PROXMOX_TOKEN_VALUE": "",
+        "PROXMOX_PORT": "8006",
+        "PROXMOX_VERIFY_SSL": "false"
+      }
+    }
+  }
+}
