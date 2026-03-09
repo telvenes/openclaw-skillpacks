@@ -1,0 +1,12 @@
+{
+  "name": "k8s-mcp",
+  "version": "1.0.0",
+  "description": "Kubernetes MCP server for OpenClaw",
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/k8s-mcp.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.1"
+  }
+}
