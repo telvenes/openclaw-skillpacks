@@ -1,0 +1,7 @@
+{
+  "files": {
+    "argocd/apps/openclaw/skills/k8s-mcp/SKILL.md": "SKILL.md",
+    "argocd/apps/openclaw/skills/k8s-mcp/scripts/k8s.sh": "scripts/k8s.sh"
+  },
+  "directories": ["argocd/apps/openclaw/skills/k8s-mcp/scripts"]
+}
