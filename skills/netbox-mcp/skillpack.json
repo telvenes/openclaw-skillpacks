@@ -2,7 +2,9 @@
   "files": {
     "skills/netbox-mcp/SKILL.md": "SKILL.md"
   },
-  "directories": [],
+  "directories": [
+    "skills/netbox-mcp"
+  ],
   "config": {
     "netbox-mcp": {
       "enabled": true,
