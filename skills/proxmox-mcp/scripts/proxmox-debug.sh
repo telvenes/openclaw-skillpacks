@@ -1,48 +1,97 @@
 #!/bin/sh
 set -eu
 
-WORKDIR="/home/openclaw/.openclaw/workspace"
-SKILL_DIR="$WORKDIR/skills/proxmox-mcp"
-VENV="$SKILL_DIR/.venv"
+WS="${OPENCLAW_WORKSPACE:-/home/openclaw/.openclaw/workspace}"
+SKDIR="$WS/skills/proxmox-mcp"
+CFG="/home/openclaw/.openclaw/openclaw.json"
 
-cd "$WORKDIR"
+load_env_from_openclaw_json() {
+  if [ "${PROXMOX_HOST:-}" != "" ]; then
+    return 0
+  fi
 
-# Reuse venv if present (or create)
-if [ ! -x "$VENV/bin/python3" ]; then
-  python3 -m venv "$VENV"
-  "$VENV/bin/python3" -m pip install -q --upgrade pip setuptools wheel || true
-  "$VENV/bin/python3" -m pip install -q -r "$SKILL_DIR/requirements.txt"
-fi
+  if [ ! -f "$CFG" ]; then
+    echo "ERROR: Missing $CFG and PROXMOX_HOST not set" >&2
+    return 1
+  fi
 
-echo "== PROXMOX_* in process env (redacted) =="
-env | grep -E '^PROXMOX_' | sed -E 's/(PROXMOX_TOKEN_VALUE=).+/\1<redacted>/'
+  python3 - <<'PY'
+import json, shlex
+cfg_path="/home/openclaw/.openclaw/openclaw.json"
+cfg=json.load(open(cfg_path))
+env = (((cfg.get("skills") or {}).get("entries") or {}).get("proxmox-mcp") or {}).get("env") or {}
+for k,v in env.items():
+    if v is None:
+        continue
+    print(f"export {k}={shlex.quote(str(v))}")
+PY
+}
 
-echo
-echo "== read env mapping from openclaw.json and probe nodes =="
+normalize_token_value() {
+  if [ "${PROXMOX_TOKEN_VALUE:-}" = "\${PROXMOX_TOKEN_SECRET}" ] || \
+     [ "${PROXMOX_TOKEN_VALUE:-}" = "${PROXMOX_TOKEN_SECRET:-__MISSING__}" ]; then
+    if [ "${PROXMOX_TOKEN_SECRET:-}" != "" ]; then
+      export PROXMOX_TOKEN_VALUE="${PROXMOX_TOKEN_SECRET}"
+    fi
+  fi
+}
 
-"$VENV/bin/python3" - <<'PY'
-import json, os, re
+install_deps_if_needed() {
+  python3 -c "import proxmoxer" >/dev/null 2>&1 && return 0
+  echo "Installing Python deps from $SKDIR/requirements.txt ..."
+  python3 -m pip install -q --no-cache-dir -r "$SKDIR/requirements.txt"
+}
+
+main() {
+  cd "$WS"
+  eval "$(load_env_from_openclaw_json)"
+  normalize_token_value
+  install_deps_if_needed
+
+  echo "== files =="
+  find "$SKDIR" -maxdepth 4 -type f | sed -n '1,120p'
+  echo
+
+  echo "== env (redacted) =="
+  env | grep -E '^PROXMOX_' | sed -E 's/(PROXMOX_TOKEN_VALUE=).+/\1<redacted>/' | sed -E 's/(PROXMOX_TOKEN_SECRET=).+/\1<redacted>/'
+  echo
+
+  echo "== python probe =="
+  python3 - <<'PY'
+import os
 from proxmoxer import ProxmoxAPI
 
-cfg = json.load(open("/home/openclaw/.openclaw/openclaw.json"))
-env = cfg["skills"]["entries"]["proxmox-mcp"].get("env", {}) or {}
-
-def expand(v):
-    def repl(m):
-        k=m.group(1)
-        return os.environ.get(k, m.group(0))
-    return re.sub(r"\$\{([^}]+)\}", repl, str(v))
-
-for k,v in env.items():
-    os.environ.setdefault(k, expand(v))
+def b(v: str) -> bool:
+    return str(v).lower() not in ("0","false","no","off","")
 
 host=os.environ["PROXMOX_HOST"]
 user=os.environ["PROXMOX_USER"]
 token_name=os.environ["PROXMOX_TOKEN_NAME"]
 token_value=os.environ["PROXMOX_TOKEN_VALUE"]
-verify_ssl = os.environ.get("PROXMOX_VERIFY_SSL","false").lower() not in ("0","false","no","off","")
+verify_ssl = b(os.environ.get("PROXMOX_VERIFY_SSL","false"))
 
-p = ProxmoxAPI(host, user=user, token_name=token_name, token_value=token_value, verify_ssl=verify_ssl)
+p=ProxmoxAPI(host, user=user, token_name=token_name, token_value=token_value, verify_ssl=verify_ssl)
+
 nodes = p.nodes.get()
-print("OK nodes:", [n.get("node") for n in nodes])
+node_names = [n.get("node") for n in nodes if n.get("node")]
+print("OK nodes:", node_names)
+
+running = []
+for nn in node_names:
+    # QEMU VMs
+    for vm in p.nodes(nn).qemu.get():
+        if vm.get("status") == "running":
+            running.append((nn, "qemu", vm.get("vmid"), vm.get("name")))
+    # LXC containers
+    for ct in p.nodes(nn).lxc.get():
+        if ct.get("status") == "running":
+            running.append((nn, "lxc", ct.get("vmid"), ct.get("name")))
+
+print("\n== RUNNING (qemu+lxc) ==")
+for nn, typ, vmid, name in sorted(running, key=lambda x: (x[0], x[1], int(x[2] or 0))):
+    print(f"{nn}: {typ} {vmid} {name}")
+print(f"\nTotal running: {len(running)}")
 PY
+}
+
+main "$@"
