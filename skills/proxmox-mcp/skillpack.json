@@ -1,4 +1,5 @@
 {
+  "format": "openclaw-skillpack/v1",
   "files": {
     "skills/proxmox-mcp/skillpack.json": "skillpack.json",
     "skills/proxmox-mcp/SKILL.md": "SKILL.md",
@@ -8,13 +9,8 @@
     "skills/proxmox-mcp/scripts/proxmox-debug.sh": "scripts/proxmox-debug.sh",
 
     "skills/proxmox-mcp/src/proxmox_mcp/__init__.py": "src/proxmox_mcp/__init__.py",
-    "skills/proxmox-mcp/src/proxmox_mcp/server.py": "src/proxmox_mcp/server.py",
+    "skills/proxmox-mcp/src/proxmox_mcp/client.py": "src/proxmox_mcp/client.py",
     "skills/proxmox-mcp/src/proxmox_mcp/config.py": "src/proxmox_mcp/config.py",
-    "skills/proxmox-mcp/src/proxmox_mcp/client.py": "src/proxmox_mcp/client.py"
-  },
-  "directories": [
-    "skills/proxmox-mcp/scripts",
-    "skills/proxmox-mcp/src",
-    "skills/proxmox-mcp/src/proxmox_mcp"
-  ]
+    "skills/proxmox-mcp/src/proxmox_mcp/server.py": "src/proxmox_mcp/server.py"
+  }
 }
