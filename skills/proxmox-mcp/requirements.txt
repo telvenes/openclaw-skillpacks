@@ -1,3 +1,2 @@
-mcp
 proxmoxer
-requests
+mcp[cli]
