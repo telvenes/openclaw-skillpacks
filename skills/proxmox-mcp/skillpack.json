@@ -14,8 +14,8 @@
         "PROXMOX_USER": "",
         "PROXMOX_TOKEN_NAME": "",
         "PROXMOX_TOKEN_VALUE": "",
-        "PROXMOX_PORT": "8006",
-        "PROXMOX_VERIFY_SSL": "false"
+        "PROXMOX_VERIFY_SSL": "true",
+        "PROXMOX_ALLOW_WRITE": "false"
       }
     }
   }
