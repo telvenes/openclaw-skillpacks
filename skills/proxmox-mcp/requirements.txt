@@ -1,5 +1,3 @@
-mcp[cli]
+mcp
 proxmoxer
 requests
-python-dotenv
-typing_extensions
