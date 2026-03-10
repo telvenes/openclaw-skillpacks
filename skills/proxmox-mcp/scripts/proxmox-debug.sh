@@ -1,48 +1,38 @@
-#!/usr/bin/env sh
+#!/bin/sh
 set -eu
 
-cd /home/openclaw/.openclaw/workspace/skills/proxmox-mcp 2>/dev/null || true
+WS="${OPENCLAW_WORKSPACE:-/home/openclaw/.openclaw/workspace}"
+SKDIR="$WS/skills/proxmox-mcp"
 
-python3 - << "PY"
+echo "== files =="
+find "$SKDIR" -maxdepth 3 -type f | sort
+
+echo
+echo "== env (redacted) =="
+env | grep '^PROXMOX_' | sed -E 's/(PROXMOX_TOKEN_VALUE=).+/\1<redacted>/'
+
+echo
+echo "== python probe =="
+python3 - <<'PY'
 import os, json
 from proxmoxer import ProxmoxAPI
 
-cfg_path="/home/openclaw/.openclaw/openclaw.json"
-cfg=json.load(open(cfg_path, "r", encoding="utf-8"))
-
+# Read env from openclaw.json if needed (same logic as wrapper)
+cfg=json.load(open("/home/openclaw/.openclaw/openclaw.json"))
 env = cfg["skills"]["entries"]["proxmox-mcp"].get("env", {})
 for k,v in env.items():
-    os.environ[k]=str(v)
+    os.environ.setdefault(k, str(v))
+tv=os.environ.get("PROXMOX_TOKEN_VALUE","")
+if tv.startswith("${") and "PROXMOX_TOKEN_SECRET" in os.environ:
+    os.environ["PROXMOX_TOKEN_VALUE"]=os.environ["PROXMOX_TOKEN_SECRET"]
 
-# resolve ${VAR} patterns
-for k,v in list(os.environ.items()):
-    if v.startswith("${") and v.endswith("}"):
-        key=v[2:-1]
-        if os.environ.get(key):
-            os.environ[k]=os.environ[key]
+host=os.environ["PROXMOX_HOST"]
+user=os.environ["PROXMOX_USER"]
+token_name=os.environ["PROXMOX_TOKEN_NAME"]
+token_value=os.environ["PROXMOX_TOKEN_VALUE"]
+verify_ssl = os.environ.get("PROXMOX_VERIFY_SSL","false").lower() not in ("0","false","no")
 
-need=["PROXMOX_HOST","PROXMOX_USER","PROXMOX_TOKEN_NAME","PROXMOX_TOKEN_VALUE"]
-missing=[k for k in need if not os.environ.get(k)]
-if missing:
-    raise SystemExit("Missing: "+", ".join(missing))
-
-print("== effective proxmox env ==")
-print("PROXMOX_HOST=", os.environ["PROXMOX_HOST"])
-print("PROXMOX_USER=", os.environ["PROXMOX_USER"])
-print("PROXMOX_TOKEN_NAME=", os.environ["PROXMOX_TOKEN_NAME"])
-print("PROXMOX_TOKEN_VALUE=<redacted>")
-print("PROXMOX_VERIFY_SSL=", os.environ.get("PROXMOX_VERIFY_SSL","true"))
-
-verify_ssl = os.environ.get("PROXMOX_VERIFY_SSL","true").lower() in ("1","true","yes","on")
-
-p=ProxmoxAPI(
-    os.environ["PROXMOX_HOST"],
-    user=os.environ["PROXMOX_USER"],
-    token_name=os.environ["PROXMOX_TOKEN_NAME"],
-    token_value=os.environ["PROXMOX_TOKEN_VALUE"],
-    verify_ssl=verify_ssl,
-)
-
+p=ProxmoxAPI(host, user=user, token_name=token_name, token_value=token_value, verify_ssl=verify_ssl)
 nodes=p.nodes.get()
 print("OK nodes:", [n.get("node") for n in nodes])
 PY
