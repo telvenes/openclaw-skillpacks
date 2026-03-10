@@ -1,15 +1,15 @@
 {
   "files": {
-    "skills/proxmox-mcp/SKILL.md": "SKILL.md",
-    "skills/proxmox-mcp/requirements.txt": "requirements.txt",
-    "skills/proxmox-mcp/proxmox_mcp_server.py": "proxmox_mcp_server.py",
+    "SKILL.md": "SKILL.md",
+    "requirements.txt": "requirements.txt",
+    "proxmox_mcp_server.py": "proxmox_mcp_server.py",
 
-    "skills/proxmox-mcp/scripts/proxmox.sh": "scripts/proxmox.sh",
-    "skills/proxmox-mcp/scripts/proxmox-debug.sh": "scripts/proxmox-debug.sh"
+    "scripts/proxmox.sh": "scripts/proxmox.sh",
+    "scripts/proxmox-debug.sh": "scripts/proxmox-debug.sh"
   },
   "directories": [
-    "skills/proxmox-mcp/src",
-    "skills/proxmox-mcp/scripts"
+    "src",
+    "scripts"
   ],
   "config": {
     "proxmox-mcp": {
