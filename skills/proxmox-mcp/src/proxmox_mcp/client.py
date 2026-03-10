@@ -1,12 +1,12 @@
 from proxmoxer import ProxmoxAPI
-from .config import get_config
+from .config import proxmox_settings
 
 def get_client() -> ProxmoxAPI:
-    cfg = get_config()
+    s = proxmox_settings()
     return ProxmoxAPI(
-        cfg["host"],
-        user=cfg["user"],
-        token_name=cfg["token_name"],
-        token_value=cfg["token_value"],
-        verify_ssl=cfg["verify_ssl"],
+        s["host"],
+        user=s["user"],
+        token_name=s["token_name"],
+        token_value=s["token_value"],
+        verify_ssl=s["verify_ssl"],
     )
