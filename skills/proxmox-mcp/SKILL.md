@@ -1,25 +1,8 @@
-name: proxmox-mcp
-description: Advanced Proxmox VE and Ceph management via Model Context Protocol.
-tools:
-  - type: mcp
-    command: sh
-    args:
-      - "-c"
-      - "pip install -q -r skills/proxmox-mcp/requirements.txt && PYTHONPATH=skills/proxmox-mcp/src python3 -m proxmox_mcp.server"
+name: proxmox-mcp description: Proxmox VE MCP server (read-first, optional write ops gated by PROXMOX_ALLOW_WRITE). tools: - type: mcp id: proxmox command: sh args: - "-c" - "pip install -q -r skills/proxmox-mcp/requirements.txt && PYTHONPATH=skills/proxmox-mcp/src python3 -m proxmox_mcp.server" timeout: 300 env: PROXMOX_HOST: "" PROXMOX_USER: "" PROXMOX_TOKEN_NAME: "" PROXMOX_TOKEN_VALUE: "" PROXMOX_VERIFY_SSL: "true" PROXMOX_ALLOW_WRITE: "false"
 instructions: |
-  CRITICAL: Authentication strictly uses API Token authentication. Do NOT attempt to use standard passwords or curl.
-
-  Available Tools:
-  - get_nodes: List cluster nodes and resource usage.
-  - get_cluster_status: Check cluster quorum and health.
-  - get_storage: List storage pools (Ceph, LVM, NFS).
-  - get_node_status: Detailed metrics for a specific node.
-  - get_vms / get_containers: List all instances and current status.
-  - create_vm / create_container: Provision new resources.
-  - start_vm / stop_vm / shutdown_vm / reset_vm: Power management operations.
-  - execute_vm_command: Run commands via QEMU Guest Agent.
-
-  Usage Rules:
-  1. Tool Priority: Use these structured tools for ALL Proxmox queries. NEVER use raw curl, pip, or manual Python scripts.
-  2. Generic Naming: Always use generic examples (e.g., vmid: 100) when discussing actions.
-  3. Safety: Always verify the current state of a resource (using get_vms) before performing power or deletion tasks.
+  CRITICAL:
+  - This server supports Proxmox API Token auth (user + token_name + token_value).
+  - Read operations are always enabled.
+  - Write operations (start/stop/shutdown) are disabled unless PROXMOX_ALLOW_WRITE=true.
+  - Config may arrive via process env OR via OpenClaw config in /home/openclaw/.openclaw/openclaw.json under skills.entries.proxmox-mcp.env.
+  - If PROXMOX_TOKEN_VALUE contains ${VAR}, the server resolves it from process env (e.g. ${PROXMOX_TOKEN_SECRET}).
