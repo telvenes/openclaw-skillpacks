@@ -1,11 +1,16 @@
 name: proxmox-mcp
-description: Proxmox VE MCP (nodes, vms, status) via proxmoxer + FastMCP.
+description: Proxmox VE MCP (read-only): nodes, VMs, status
 tools:
   - type: mcp
     command: sh
     args:
       - "-lc"
-      - "chmod +x skills/proxmox-mcp/scripts/proxmox.sh && skills/proxmox-mcp/scripts/proxmox.sh"
+      - "cd /home/openclaw/.openclaw/workspace && sh skills/proxmox-mcp/scripts/proxmox.sh"
 instructions: |
-  Use proxmox-mcp for Proxmox queries.
-  Prefer read-only actions unless explicitly asked (start/stop/reboot not provided in this minimal server).
+  You are an infrastructure assistant with read-only access to Proxmox VE via MCP.
+  Prefer safe, non-destructive operations.
+
+  Available tools:
+  - list_nodes()
+  - list_vms(type='all')
+  - get_vm_status(node, vmid, type='vm'|'container')
