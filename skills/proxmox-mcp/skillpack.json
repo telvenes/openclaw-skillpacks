@@ -1,27 +1,20 @@
 {
   "files": {
-    "SKILL.md": "SKILL.md",
-    "requirements.txt": "requirements.txt",
-    "proxmox_mcp_server.py": "proxmox_mcp_server.py",
+    "skills/proxmox-mcp/skillpack.json": "skillpack.json",
+    "skills/proxmox-mcp/SKILL.md": "SKILL.md",
+    "skills/proxmox-mcp/requirements.txt": "requirements.txt",
 
-    "scripts/proxmox.sh": "scripts/proxmox.sh",
-    "scripts/proxmox-debug.sh": "scripts/proxmox-debug.sh"
+    "skills/proxmox-mcp/scripts/proxmox.sh": "scripts/proxmox.sh",
+    "skills/proxmox-mcp/scripts/proxmox-debug.sh": "scripts/proxmox-debug.sh",
+
+    "skills/proxmox-mcp/src/proxmox_mcp/__init__.py": "src/proxmox_mcp/__init__.py",
+    "skills/proxmox-mcp/src/proxmox_mcp/server.py": "src/proxmox_mcp/server.py",
+    "skills/proxmox-mcp/src/proxmox_mcp/config.py": "src/proxmox_mcp/config.py",
+    "skills/proxmox-mcp/src/proxmox_mcp/client.py": "src/proxmox_mcp/client.py"
   },
   "directories": [
-    "src",
-    "scripts"
-  ],
-  "config": {
-    "proxmox-mcp": {
-      "enabled": true,
-      "env": {
-        "PROXMOX_HOST": "",
-        "PROXMOX_USER": "",
-        "PROXMOX_TOKEN_NAME": "",
-        "PROXMOX_TOKEN_VALUE": "",
-        "PROXMOX_VERIFY_SSL": "true",
-        "PROXMOX_ALLOW_WRITE": "false"
-      }
-    }
-  }
+    "skills/proxmox-mcp/scripts",
+    "skills/proxmox-mcp/src",
+    "skills/proxmox-mcp/src/proxmox_mcp"
+  ]
 }
