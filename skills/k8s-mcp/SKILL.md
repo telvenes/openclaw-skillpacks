@@ -10,31 +10,38 @@ tools:
     args: ["skills/k8s-mcp/scripts/k8s.sh"]
 
 instructions: |
-  Use this MCP server for Kubernetes troubleshooting.
+  Use this skill for Kubernetes troubleshooting.
 
-  CRITICAL NAMING:
-  - "k8s-mcp" is the SKILL name, NOT a tool.
-  - The ONLY valid tool names are: k8s_health, k8s_events, k8s_get, k8s_describe, k8s_logs
-  - NEVER call a tool named "k8s-mcp" (it does not exist).
+  IMPORTANT:
+  - The skill name is "k8s-mcp". It is NOT a tool name.
+  - Valid tool names are:
+    - k8s_health
+    - k8s_events
+    - k8s_get
+    - k8s_describe
+    - k8s_logs
+  - Never call a tool named "k8s-mcp" (it does not exist).
+  - Do not use exec/kubectl. kubectl is not installed.
 
-  CRITICAL SAFETY:
-  - DO NOT use exec/kubectl (kubectl is not installed). Always use the tools above.
-  - This skill is read-only. Secrets are blocked.
+  Safety:
+  - Read-only only.
+  - Secrets are blocked.
 
-  Quick examples (use these patterns exactly):
-  - List pods in namespace dev:
-    k8s_get {"resource":"pods","namespace":"dev","limit":200}
-  - Show warnings in namespace dev:
-    k8s_events {"namespace":"dev","type":"warnings","limit":50}
+  Common patterns:
+  - List pods in a namespace:
+    Use k8s_get with resource "pods" and the namespace.
+  - Show warnings:
+    Use k8s_events with type "warnings".
   - Fetch logs:
-    k8s_logs {"namespace":"dev","pod":"<pod>","container":"<container>","tailLines":200}
+    Use k8s_logs with pod + optional container.
 
-  Tool guide:
-  - k8s_health: Cluster reachability + version + readyz
-  - k8s_events: Recent events (newest first)
-  - k8s_get: Read-only resource fetch (allowlisted)
-  - k8s_describe: Object JSON + related events (best-effort)
-  - k8s_logs: Pod logs (tail/since/container/previous)
+  Examples (exact argument shapes):
+  - Pods in namespace dev:
+    k8s_get {"resource":"pods","namespace":"dev","limit":200}
+  - Warning events in namespace dev:
+    k8s_events {"namespace":"dev","type":"warnings","limit":50}
+  - Logs:
+    k8s_logs {"namespace":"dev","pod":"<pod>","container":"<container>","tailLines":200}
 
 metadata:
   author: telvenes
@@ -43,16 +50,16 @@ metadata:
 
 # k8s-mcp (read-only)
 
-A minimal, production-safe Kubernetes diagnostics MCP server for OpenClaw.
+Minimal Kubernetes diagnostics for OpenClaw.
 
 ## Notes
-- Uses in-cluster ServiceAccount token + CA.
-- No kubectl dependency.
-- Blocks Secrets by default.
+- In-cluster ServiceAccount token + CA
+- No kubectl dependency
+- Secrets blocked by design
 
 ## Typical workflow
-1) `k8s_health`
-2) `k8s_events` (namespace)
-3) `k8s_get` pods/deployments/services
-4) `k8s_describe` for the failing resource
-5) `k8s_logs` for the crashing pod
+1. k8s_health
+2. k8s_events (namespace)
+3. k8s_get (pods/deployments/services)
+4. k8s_describe (failing object)
+5. k8s_logs (crashing pod)
