@@ -12,17 +12,29 @@ tools:
 instructions: |
   Use this MCP server for Kubernetes troubleshooting in this OpenClaw instance.
 
-  Available tools:
-  - k8s_health: Cluster reachability + version
-  - k8s_events: Recent events (sorted newest first)
-  - k8s_get: Read-only resource fetch (allowlisted resources only)
-  - k8s_describe: Focused “describe” (object + related events)
-  - k8s_logs: Pod logs (tail/since/container/previous)
+  CRITICAL NAMING:
+  - "k8s-mcp" is the SKILL name, NOT a tool.
+  - The ONLY valid tool names are: k8s_health, k8s_events, k8s_get, k8s_describe, k8s_logs
+  - NEVER call a tool named "k8s-mcp" (it does not exist).
 
-  Rules / guardrails:
-  - Prefer k8s_events early when debugging restarts/probes/scheduling.
-  - This skill is read-only by design.
-  - Secrets are intentionally blocked (no fetching Secret objects).
+  CRITICAL SAFETY:
+  - DO NOT use exec/kubectl (kubectl is not installed). Always use the tools above.
+  - This skill is read-only. Secrets are blocked.
+
+  Quick examples (use these patterns):
+  - List pods in namespace dev:
+    k8s_get {"resource":"pods","namespace":"dev","limit":200}
+  - Show warnings in namespace dev:
+    k8s_events {"namespace":"dev","type":"warnings","limit":50}
+  - Fetch logs:
+    k8s_logs {"namespace":"dev","pod":"<pod>","container":"<container>","tailLines":200}
+
+  Tool guide:
+  - k8s_health: Cluster reachability + version + readyz
+  - k8s_events: Recent events (newest first)
+  - k8s_get: Read-only resource fetch (allowlisted)
+  - k8s_describe: Object JSON + related events (best-effort)
+  - k8s_logs: Pod logs (tail/since/container/previous)
 
 metadata:
   author: telvenes
