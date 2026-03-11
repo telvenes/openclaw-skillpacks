@@ -10,7 +10,7 @@ tools:
     args: ["skills/k8s-mcp/scripts/k8s.sh"]
 
 instructions: |
-  Use this MCP server for Kubernetes troubleshooting in this OpenClaw instance.
+  Use this MCP server for Kubernetes troubleshooting.
 
   CRITICAL NAMING:
   - "k8s-mcp" is the SKILL name, NOT a tool.
@@ -21,7 +21,7 @@ instructions: |
   - DO NOT use exec/kubectl (kubectl is not installed). Always use the tools above.
   - This skill is read-only. Secrets are blocked.
 
-  Quick examples (use these patterns):
+  Quick examples (use these patterns exactly):
   - List pods in namespace dev:
     k8s_get {"resource":"pods","namespace":"dev","limit":200}
   - Show warnings in namespace dev:
@@ -38,7 +38,7 @@ instructions: |
 
 metadata:
   author: telvenes
-  version: "0.2.0"
+  version: "0.2.1"
 ---
 
 # k8s-mcp (read-only)
