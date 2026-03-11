@@ -49,7 +49,7 @@ These are low-level JSON-RPC over stdio tests. Run inside the agent container.
 ) | bash scripts/k8s.sh
 ```
 
-#logs
+### Logs
 ```bash
 (
   printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}';
