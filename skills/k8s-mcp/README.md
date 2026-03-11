@@ -1,22 +1,26 @@
 # k8s-mcp (read-only)
 
-A minimal, production-safe Kubernetes diagnostics wrapper for OpenClaw.
+Minimal, production-safe Kubernetes diagnostics MCP server for OpenClaw.
 
-## Why this exists
+## What this is
 - Works without `kubectl`
 - Uses in-cluster ServiceAccount token + CA
-- Read-only commands only (safer for LLM-driven ops)
+- Read-only by design
+- Secrets are blocked by policy
 
-## Commands
-- `events [namespace] [limit]`
-- `warnings [namespace] [limit]`
-- `helm-list [namespace]`
-- `config`
-- `version`
+## Tools (these are the ONLY tool names)
+- `k8s_health`
+- `k8s_events`
+- `k8s_get`
+- `k8s_describe`
+- `k8s_logs`
 
-## Examples
-```sh
-sh skills/k8s-mcp/scripts/k8s.sh events openclaw
-sh skills/k8s-mcp/scripts/k8s.sh warnings openclaw 200
-sh skills/k8s-mcp/scripts/k8s.sh version
-sh skills/k8s-mcp/scripts/k8s.sh helm-list cvat
+## Manual MCP testing (CLI)
+These are low-level protocol tests (JSON-RPC over stdio). Run inside the agent container.
+
+### List tools
+```bash
+( \
+  printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}'; \
+  printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'; \
+) | bash scripts/k8s.sh
