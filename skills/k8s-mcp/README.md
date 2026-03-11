@@ -25,14 +25,15 @@ These are low-level JSON-RPC over stdio tests. Run inside the agent container.
   printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}';
   printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}';
 ) | bash scripts/k8s.sh
-
+```
 
 ### Health
+```bash
 (
   printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}';
   printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"k8s_health","arguments":{}}}';
 ) | bash scripts/k8s.sh
-
+```
 ### Events
 (
   printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}';
